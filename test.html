@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <title>演員電影查詢</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-dark text-light p-4">
+    <div class="container">
+        <h1 class="mb-4">🎭 演員電影查詢</h1>
+
+        <!-- 搜尋框 -->
+        <div class="input-group mb-3">
+            <input type="text" id="actorInput" class="form-control" placeholder="輸入演員名稱...">
+            <button class="btn btn-success" onclick="searchActor()">查詢</button>
+        </div>
+
+        <!-- 結果區 -->
+        <div id="actorResult" class="row g-4"></div>
+    </div>
+
+    <script>
+        const apiKey = "0f79586eb9d92afa2b7266f7928b055c";
+        const imageBase = "https://image.tmdb.org/t/p/w500";
+
+        async function searchActor() {
+            const query = document.getElementById("actorInput").value.trim();
+            if (!query) return;
+
+            // 先查演員
+            const res = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${apiKey}&query=${query}&language=zh-TW`);
+            const data = await res.json();
+
+            if (data.results.length > 0) {
+                const actor = data.results[0]; // 先取第一個演員
+                const actorId = actor.id;
+
+                // 查演員的電影
+                const creditsRes = await fetch(`https://api.themoviedb.org/3/person/${actorId}/movie_credits?api_key=${apiKey}&language=zh-TW`);
+                const credits = await creditsRes.json();
+
+                // 把演員的所有電影顯示出來
+                let moviesHtml = `
+                <div class="mt-3">
+                    <h2>${actor.name} 的電影作品 (${credits.cast.length} 部)</h2>
+                </div>
+                `;
+
+                moviesHtml += credits.cast.map(movie => `
+          <div class="col-md-3 mb-3">
+            <div class="card bg-secondary text-light h-100">
+              <img src="${movie.poster_path ? imageBase + movie.poster_path : ''}" 
+                   class="card-img-top" alt="${movie.title}">
+              <div class="card-body">
+                <h5 class="card-title">${movie.title}</h5>
+                <p class="card-text">上映年份：${movie.release_date ? movie.release_date.slice(0, 4) : '未知'}</p>
+                <p class="card-text">角色：${movie.character || '未提供'}</p>
+              </div>
+            </div>
+          </div>
+        `).join("");
+
+                document.getElementById("actorResult").innerHTML = `<div class="row">${moviesHtml}</div>`;
+            } else {
+                document.getElementById("actorResult").innerHTML = `<p>找不到該演員 😢</p>`;
+            }
+        }
+    </script>
+</body>
+
+</html>
